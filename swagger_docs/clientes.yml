@@ -1,0 +1,31 @@
+summary: Cadastro de cliente
+description: Recebe os dados do cliente e retorna uma confirmação do cadastro
+parameters:
+  - name: body
+    in: body
+    required: true
+    schema:
+      type: object
+      properties:
+        nome:
+          type: string
+          example: "João Barbosa"
+        email:
+          type: string
+          example: "joao@email.com"
+        telefone:
+          type: string
+          example: "11999999999"
+      required:
+        - nome
+        - email
+responses:
+  200:
+    description: Cadastro realizado com sucesso
+    examples:
+      application/json:
+        message: "Cliente cadastrado com sucesso"
+        cliente:
+          nome: "João Barbosa"
+          email: "joao@email.com"
+          telefone: "11999999999"

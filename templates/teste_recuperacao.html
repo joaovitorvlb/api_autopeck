@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Teste - Sistema de Recuperação de Senha</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        .test-section h3 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        input[type="email"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .response {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .response.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .response.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .link-preview {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .link-preview a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .link-preview a:hover {
+            text-decoration: underline;
+        }
+        .instructions {
+            background: #e7f3ff;
+            color: #004085;
+            border: 1px solid #b8daff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .instructions h4 {
+            margin-top: 0;
+            color: #004085;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste do Sistema de Recuperação de Senha</h1>
+        
+        <div class="instructions">
+            <h4>📋 Instruções:</h4>
+            <ol>
+                <li><strong>Inicie o servidor Flask:</strong> <code>python app.py</code></li>
+                <li><strong>Teste a recuperação:</strong> Digite um email e clique em "Solicitar Recuperação"</li>
+                <li><strong>Verifique o console:</strong> O link de recuperação aparecerá no terminal</li>
+                <li><strong>Acesse o link:</strong> Use o link gerado para testar o formulário HTML</li>
+                <li><strong>Teste manual:</strong> Ou use um token de exemplo no campo abaixo</li>
+            </ol>
+        </div>
+
+        <!-- Teste 1: Solicitar Recuperação -->
+        <div class="test-section">
+            <h3>🔐 1. Solicitar Recuperação de Senha</h3>
+            <div class="form-group">
+                <label for="email">Email para recuperação:</label>
+                <input type="email" id="email" placeholder="usuario@exemplo.com" value="teste@exemplo.com">
+            </div>
+            <button class="btn" onclick="solicitarRecuperacao()">
+                📧 Solicitar Recuperação
+            </button>
+            <div id="recovery-response" class="response" style="display: none;"></div>
+            <div id="recovery-link" class="link-preview" style="display: none;"></div>
+        </div>
+
+        <!-- Teste 2: Acesso Direto ao Formulário -->
+        <div class="test-section">
+            <h3>🎯 2. Teste Direto do Formulário</h3>
+            <div class="form-group">
+                <label for="test-token">Token de teste (opcional):</label>
+                <input type="text" id="test-token" placeholder="Cole um token válido aqui">
+            </div>
+            <button class="btn btn-success" onclick="abrirFormulario()">
+                🔗 Abrir Formulário de Redefinição
+            </button>
+            <button class="btn" onclick="abrirFormularioSemToken()">
+                ❌ Testar Sem Token
+            </button>
+        </div>
+
+        <!-- Teste 3: Verificar Status dos Tokens -->
+        <div class="test-section">
+            <h3>📊 3. Status dos Tokens (Debug)</h3>
+            <button class="btn" onclick="verificarStatus()">
+                📋 Verificar Tokens Ativos
+            </button>
+            <div id="status-response" class="response" style="display: none;"></div>
+        </div>
+
+        <!-- Links Úteis -->
+        <div class="test-section">
+            <h3>🔗 4. Links Úteis</h3>
+            <p>
+                <a href="/redefinir-senha" target="_blank">🔐 Formulário de Redefinição (sem token)</a><br>
+                <a href="/recovery-status" target="_blank">📊 Status dos Tokens</a><br>
+                <a href="/swagger" target="_blank">📚 Documentação da API</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Função para solicitar recuperação
+        async function solicitarRecuperacao() {
+            const email = document.getElementById('email').value;
+            const responseDiv = document.getElementById('recovery-response');
+            const linkDiv = document.getElementById('recovery-link');
+            
+            if (!email) {
+                alert('Digite um email válido!');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/esqueci-senha', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email: email})
+                });
+                
+                const data = await response.json();
+                
+                responseDiv.style.display = 'block';
+                responseDiv.className = `response ${response.ok ? 'success' : 'error'}`;
+                responseDiv.textContent = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    linkDiv.style.display = 'block';
+                    linkDiv.innerHTML = `
+                        <strong>🔗 Link gerado!</strong><br>
+                        Verifique o console do servidor para o link completo, ou 
+                        <a href="/recovery-status" target="_blank">clique aqui para ver tokens ativos</a>
+                    `;
+                }
+                
+            } catch (error) {
+                responseDiv.style.display = 'block';
+                responseDiv.className = 'response error';
+                responseDiv.textContent = 'Erro de conexão: ' + error.message;
+            }
+        }
+        
+        // Função para abrir formulário com token
+        function abrirFormulario() {
+            const token = document.getElementById('test-token').value;
+            if (token) {
+                window.open(`/redefinir-senha?token=${token}`, '_blank');
+            } else {
+                alert('Digite um token válido ou solicite uma recuperação primeiro!');
+            }
+        }
+        
+        // Função para abrir formulário sem token
+        function abrirFormularioSemToken() {
+            window.open('/redefinir-senha', '_blank');
+        }
+        
+        // Função para verificar status
+        async function verificarStatus() {
+            const responseDiv = document.getElementById('status-response');
+            
+            try {
+                const response = await fetch('/recovery-status');
+                const data = await response.json();
+                
+                responseDiv.style.display = 'block';
+                responseDiv.className = `response ${response.ok ? 'success' : 'error'}`;
+                responseDiv.textContent = JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                responseDiv.style.display = 'block';
+                responseDiv.className = 'response error';
+                responseDiv.textContent = 'Erro de conexão: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
