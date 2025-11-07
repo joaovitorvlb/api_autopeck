@@ -333,11 +333,49 @@ cd ~/api_autopeck
 # Criar diretório para uploads
 mkdir -p static/images/produtos
 
-# Definir permissões
+# Definir permissões corretas (importante!)
+chmod 755 static
+chmod 755 static/images
 chmod 755 static/images/produtos
+
+# Verificar permissões
+ls -la static/
+ls -la static/images/
+ls -la static/images/produtos/
 
 # Criar arquivo README para o diretório
 echo "# Diretório para imagens de produtos" > static/images/produtos/README.md
+```
+
+### 5.3 ⚠️ Importante: Caminhos Absolutos no PythonAnywhere
+
+**O código já está configurado para usar caminhos absolutos automaticamente:**
+
+```python
+# Em app.py (já implementado)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'images', 'produtos')
+
+# Criar diretório automaticamente se não existir
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+```
+
+**Por que isso é necessário?**
+- PythonAnywhere executa a aplicação em um diretório diferente do código
+- Caminhos relativos como `'static/images/produtos'` não funcionam
+- Caminhos absolutos garantem que o diretório seja encontrado sempre
+
+**Verificar se está funcionando:**
+```bash
+# No console Python
+cd ~/api_autopeck
+python -c "
+import os
+from app import app
+print('UPLOAD_FOLDER:', app.config['UPLOAD_FOLDER'])
+print('Existe?', os.path.exists(app.config['UPLOAD_FOLDER']))
+print('Pode escrever?', os.access(app.config['UPLOAD_FOLDER'], os.W_OK))
+"
 ```
 
 ---
@@ -554,9 +592,31 @@ pip install mysql-connector-python
 2. Testar importação no console: `python -c "from app import app"`
 3. Verificar arquivo WSGI
 
+### Erro: "No such file or directory" no upload de imagens
+**Causa**: Caminho relativo não funciona no PythonAnywhere
+
+**Solução**: O código já usa caminho absoluto. Se o erro persistir:
+```bash
+# Criar diretório manualmente
+cd ~/api_autopeck
+mkdir -p static/images/produtos
+chmod 755 static/images/produtos
+
+# Verificar se o diretório existe
+ls -la static/images/produtos/
+```
+
+**Importante**: O `app.py` já está configurado para usar caminhos absolutos:
+```python
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'images', 'produtos')
+```
+
 ### Upload de imagens não funciona
 - Verificar permissões: `chmod 755 static/images/produtos/`
 - Conferir tamanho máximo: `MAX_CONTENT_LENGTH`
+- Verificar se o diretório existe: `ls -la static/images/produtos/`
+- Testar criação manual de arquivo: `touch static/images/produtos/test.txt`
 
 ---
 

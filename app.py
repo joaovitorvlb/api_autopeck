@@ -41,7 +41,14 @@ app.config["JWT_REFRESHMAXAGE"] = 604800
 
 # Configuração para upload de arquivos
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB máximo
-app.config['UPLOAD_FOLDER'] = 'static/images/produtos'
+
+# Usar caminho absoluto para funcionar em produção (PythonAnywhere)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'images', 'produtos')
+
+# Criar diretório de upload se não existir
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 # Configuração das resoluções de imagem
