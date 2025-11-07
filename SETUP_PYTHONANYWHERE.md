@@ -612,6 +612,25 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'images', 'produtos')
 ```
 
+### Erro: "module 'PIL.Image' has no attribute 'Resampling'"
+**Causa**: Versão antiga do Pillow no PythonAnywhere
+
+**Solução**: O código já tem compatibilidade com versões antigas e novas. Se persistir:
+```bash
+cd ~/api_autopeck
+source venv/bin/activate
+pip install --upgrade Pillow
+```
+
+**Nota**: O código usa detecção automática:
+```python
+# Compatibilidade com Pillow < 9.1.0 e >= 9.1.0
+try:
+    RESAMPLE_FILTER = Image.Resampling.LANCZOS  # Versão nova
+except AttributeError:
+    RESAMPLE_FILTER = Image.LANCZOS  # Versão antiga
+```
+
 ### Upload de imagens não funciona
 - Verificar permissões: `chmod 755 static/images/produtos/`
 - Conferir tamanho máximo: `MAX_CONTENT_LENGTH`

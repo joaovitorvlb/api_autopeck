@@ -10,6 +10,14 @@ import re
 from werkzeug.utils import secure_filename
 from PIL import Image
 
+# Compatibilidade com versões antigas e novas do Pillow
+try:
+    # Pillow >= 9.1.0
+    RESAMPLE_FILTER = Image.Resampling.LANCZOS
+except AttributeError:
+    # Pillow < 9.1.0
+    RESAMPLE_FILTER = Image.LANCZOS
+
 from flask import Flask, request, jsonify, g, send_from_directory, render_template, render_template_string
 from flask_jwt_extended import (
     JWTManager, jwt_required, create_access_token,
@@ -588,7 +596,7 @@ def create_image_resolutions(image_path, base_filename):
             for resolution_name, (width, height) in IMAGE_RESOLUTIONS.items():
                 # Calcular novo tamanho mantendo proporção
                 img_copy = img.copy()
-                img_copy.thumbnail((width, height), Image.Resampling.LANCZOS)
+                img_copy.thumbnail((width, height), RESAMPLE_FILTER)
                 
                 # Criar nome do arquivo para esta resolução
                 name_parts = base_filename.rsplit('.', 1)
