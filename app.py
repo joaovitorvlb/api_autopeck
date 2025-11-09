@@ -24,12 +24,17 @@ from flask_jwt_extended import (
     get_jwt_identity
 )
 from flasgger import Swagger, swag_from
-from dao_sqlite.funcionario_dao import FuncionarioDAO
-from dao_sqlite.produto_dao import ProdutoDAO
-from dao_sqlite.db import init_db
-from dao_sqlite.venda_dao import VendaDAO
-from dao_sqlite.item_venda_dao import ItemVendaDAO
-from dao_sqlite.cliente_dao import ClienteDAO
+from dao_mysql.funcionario_dao import FuncionarioDAO
+from dao_mysql.produto_dao import ProdutoDAO
+from dao_mysql.db import init_db
+from dao_mysql.venda_dao import VendaDAO
+from dao_mysql.item_venda_dao import ItemVendaDAO
+from dao_mysql.cliente_dao import ClienteDAO
+from dao_mysql.usuario_dao import UsuarioDAO
+from dao_mysql.nivel_acesso_dao import NivelAcessoDAO
+
+
+
 from datetime import date
 
 # Inicializa o pool de conexões ao importar o app (se as variáveis de ambiente estiverem configuradas)
@@ -1494,6 +1499,111 @@ def logout():
 
     return jsonify({"mensagem": "Logout realizado (descartar token no cliente)"}), 200
 
+
+# ---------------------------
+# 👥 ROTAS DE USUÁRIOS (PROTEGIDAS POR JWT)
+# ---------------------------
+
+@app.route("/usuarios", methods=["GET"])
+@jwt_required()
+def listar_usuarios():
+    """Lista todos os usuários (protegida por JWT)"""
+    if not MYSQL_AVAILABLE:
+        return jsonify({"erro": "DAO MySQL não disponível"}), 503
+    
+    try:
+        dao_usuario = UsuarioDAO()
+        usuarios = dao_usuario.listar_usuarios()
+        return jsonify(usuarios), 200
+    except Exception as e:
+        return jsonify({"erro": "Erro ao listar usuários", "mensagem": str(e)}), 500
+
+
+@app.route("/usuarios/<int:id>", methods=["GET"])
+@jwt_required()
+def buscar_usuario(id):
+    """Busca um usuário específico por ID (protegida por JWT)"""
+    if not MYSQL_AVAILABLE:
+        return jsonify({"erro": "DAO MySQL não disponível"}), 503
+    
+    try:
+        dao_usuario = UsuarioDAO()
+        usuario = dao_usuario.buscar_usuario(id)
+        
+        if usuario:
+            return jsonify(usuario), 200
+        else:
+            return jsonify({"erro": "Usuário não encontrado"}), 404
+    except Exception as e:
+        return jsonify({"erro": "Erro ao buscar usuário", "mensagem": str(e)}), 500
+
+
+@app.route("/usuarios/email/<email>", methods=["GET"])
+@jwt_required()
+def buscar_usuario_por_email(email):
+    """Busca um usuário específico por email (protegida por JWT)"""
+    if not MYSQL_AVAILABLE:
+        return jsonify({"erro": "DAO MySQL não disponível"}), 503
+    
+    try:
+        dao_usuario = UsuarioDAO()
+        usuario = dao_usuario.buscar_usuario_por_email(email)
+        
+        if usuario:
+            return jsonify(usuario), 200
+        else:
+            return jsonify({"erro": "Usuário não encontrado"}), 404
+    except Exception as e:
+        return jsonify({"erro": "Erro ao buscar usuário", "mensagem": str(e)}), 500
+
+
+@app.route("/usuarios/nivel/<int:id_nivel>", methods=["GET"])
+@jwt_required()
+def listar_usuarios_por_nivel(id_nivel):
+    """Lista usuários de um nível de acesso específico (protegida por JWT)"""
+    if not MYSQL_AVAILABLE:
+        return jsonify({"erro": "DAO MySQL não disponível"}), 503
+    
+    try:
+        dao_usuario = UsuarioDAO()
+        usuarios = dao_usuario.listar_usuarios_por_nivel(id_nivel)
+        return jsonify(usuarios), 200
+    except Exception as e:
+        return jsonify({"erro": "Erro ao listar usuários", "mensagem": str(e)}), 500
+
+
+@app.route("/usuarios/ativos", methods=["GET"])
+@jwt_required()
+def listar_usuarios_ativos():
+    """Lista apenas usuários ativos (protegida por JWT)"""
+    if not MYSQL_AVAILABLE:
+        return jsonify({"erro": "DAO MySQL não disponível"}), 503
+    
+    try:
+        dao_usuario = UsuarioDAO()
+        usuarios = dao_usuario.listar_usuarios_ativos()
+        return jsonify(usuarios), 200
+    except Exception as e:
+        return jsonify({"erro": "Erro ao listar usuários ativos", "mensagem": str(e)}), 500
+
+
+# ---------------------------
+# 🔐 ROTAS DE NÍVEIS DE ACESSO (PROTEGIDAS POR JWT)
+# ---------------------------
+
+@app.route("/niveis-acesso", methods=["GET"])
+@jwt_required()
+def listar_niveis_acesso():
+    """Lista todos os níveis de acesso (protegida por JWT)"""
+    if not MYSQL_AVAILABLE:
+        return jsonify({"erro": "DAO MySQL não disponível"}), 503
+    
+    try:
+        dao_nivel = NivelAcessoDAO()
+        niveis = dao_nivel.listar_niveis_acesso()
+        return jsonify(niveis), 200
+    except Exception as e:
+        return jsonify({"erro": "Erro ao listar níveis de acesso", "mensagem": str(e)}), 500
 
 
 # ---------------------------
