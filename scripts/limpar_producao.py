@@ -15,7 +15,28 @@ import os
 import sys
 
 # Adicionar o diretório raiz ao path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, BASE_DIR)
+
+# Carregar variáveis de ambiente do arquivo .env
+def load_env_file(env_path):
+    """Carrega variáveis de ambiente de um arquivo .env"""
+    if os.path.exists(env_path):
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    # Remove aspas se existirem
+                    value = value.strip().strip('"').strip("'")
+                    os.environ[key] = value
+        print(f"✅ Variáveis de ambiente carregadas de {env_path}")
+    else:
+        print(f"⚠️  Arquivo .env não encontrado em {env_path}")
+
+# Carregar .env
+env_file = os.path.join(BASE_DIR, '.env')
+load_env_file(env_file)
 
 def limpar_imagens():
     """Remove todas as imagens de teste do diretório de uploads"""
@@ -57,6 +78,18 @@ def resetar_banco_mysql():
     print("\n🗄️  Resetando banco de dados MySQL...")
     
     try:
+        # Carregar variáveis de ambiente do .env (necessário para scripts locais)
+        env_file = os.path.join(os.path.dirname(__file__), '..', '.env')
+        if os.path.exists(env_file):
+            with open(env_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, value = line.split('=', 1)
+                        value = value.strip().strip('"').strip("'")
+                        os.environ[key] = value
+            print("  ✅ Variáveis de ambiente carregadas do .env")
+        
         # Tentar importar DAO do MySQL
         from dao_mysql.db_pythonanywhere import init_db, get_cursor
         
