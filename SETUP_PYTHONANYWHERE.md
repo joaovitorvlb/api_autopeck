@@ -568,6 +568,27 @@ pip install -r requirements.txt --upgrade
 # Dashboard → Web → Reload
 ```
 
+### 11.3 Limpar Dados de Teste
+
+**🧹 Após testar a aplicação, você pode limpar os dados de teste:**
+
+```bash
+# Método automático (recomendado)
+cd ~/api_autopeck
+source venv/bin/activate
+python scripts/limpar_producao.py
+```
+
+**📚 Para instruções detalhadas, consulte:**
+- [`docs/GUIA_LIMPEZA_PRODUCAO.md`](docs/GUIA_LIMPEZA_PRODUCAO.md) - Guia completo de limpeza
+
+Este guia inclui:
+- Script automatizado de limpeza
+- Limpeza manual passo a passo
+- Como fazer backup antes de limpar
+- Como restaurar se necessário
+- Limpeza seletiva (apenas imagens ou apenas banco)
+
 ---
 
 ## 🚨 Solução de Problemas Comuns
