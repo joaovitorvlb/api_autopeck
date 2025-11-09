@@ -1086,19 +1086,6 @@ import secrets
 import hashlib
 from datetime import datetime, timedelta
 
-# Simple in-memory user store for demo. Prefer storing hashed passwords in DB.
-# You can override by setting an env var `AUTH_USERS` with JSON like: '{"maria":"1234"}'
-import json
-
-try:
-    default_users = json.loads(os.environ.get("AUTH_USERS", "{}"))
-except Exception:
-    default_users = {}
-
-# Provide a small demo user if none configured (helps local testing)
-if not default_users:
-    default_users = {"joaovitorvlb@hotmail.com": "1234", "admin": "admin"}
-
 # Store para tokens de recuperação de senha (em produção, usar banco de dados)
 recovery_tokens = {}  # {token: {"email": str, "expiry": datetime, "used": bool}}
 
@@ -1192,9 +1179,19 @@ def esqueci_senha():
         if '@' not in email or '.' not in email:
             return jsonify({"erro": "Formato de email inválido"}), 400
         
-        # Verificar se usuário existe
-        if email not in default_users:
-            # Por segurança, não revelar se email existe ou não
+        # Verificar se usuário existe no banco de dados
+        try:
+            dao_usuario = UsuarioDAO()
+            usuario = dao_usuario.buscar_usuario_por_email(email)
+            
+            if not usuario:
+                # Por segurança, não revelar se email existe ou não
+                return jsonify({
+                    "mensagem": "Se o email estiver cadastrado, você receberá instruções de recuperação.",
+                    "status": "processado"
+                }), 200
+        except Exception:
+            # Em caso de erro no banco, retornar mensagem genérica
             return jsonify({
                 "mensagem": "Se o email estiver cadastrado, você receberá instruções de recuperação.",
                 "status": "processado"
@@ -1337,20 +1334,27 @@ def redefinir_senha():
                 "erro": "Token expirado"
             }), 400
         
-        # Atualizar senha do usuário
+        # Atualizar senha do usuário no banco de dados
         email = token_data['email']
-        default_users[email] = nova_senha
+        nova_senha_hash = hashlib.sha256(nova_senha.encode()).hexdigest()
+        
+        # TODO: Implementar método de atualização de senha no UsuarioDAO
+        # Por enquanto, apenas registrar a mudança
+        # dao_usuario = UsuarioDAO()
+        # dao_usuario.atualizar_senha(email, nova_senha_hash)
         
         # Marcar token como usado
         recovery_tokens[token]['used'] = True
         
         # Log da alteração
         print(f"🔐 [SECURITY] Senha alterada para usuário: {email}")
+        print(f"🔐 [SECURITY] Novo hash: {nova_senha_hash}")
         
         return jsonify({
             "mensagem": "Senha redefinida com sucesso!",
             "status": "sucesso",
-            "email": email
+            "email": email,
+            "aviso": "Funcionalidade de atualização no banco precisa ser implementada no UsuarioDAO"
         }), 200
         
     except Exception as e:
@@ -1469,28 +1473,49 @@ def recovery_status():
 
 @app.route("/login", methods=["POST"])
 def login():
-    body = request.get_json(force=True)
-    usuario = body.get("usuario")
-    senha = body.get("senha")
+    """
+    Autentica usuário usando email e senha
+    Verifica no banco de dados MySQL
+    """
+    try:
+        body = request.get_json(force=True)
+        email = body.get("email") or body.get("usuario")  # Aceita 'email' ou 'usuario'
+        senha = body.get("senha")
 
-    # Validação básica
-    if not usuario or not senha:
-        return jsonify({"erro": "Campos 'usuario' e 'senha' são obrigatórios"}), 400
-    
-    # cria o token JWT
-    
-    # Identity can be any data that is json serializable
-    access_token = create_access_token(identity=usuario)
-
-    # retorna o token junto com a mensagem
-    if default_users.get(usuario) == senha:
+        # Validação básica
+        if not email or not senha:
+            return jsonify({"erro": "Campos 'email' e 'senha' são obrigatórios"}), 400
+        
+        # Gerar hash SHA256 da senha
+        senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+        
+        # Autenticar no banco de dados
+        dao_usuario = UsuarioDAO()
+        usuario = dao_usuario.autenticar_usuario(email, senha_hash)
+        
+        if usuario:
+            # Criar token JWT com informações do usuário
+            access_token = create_access_token(identity=email)
+            
+            return jsonify({
+                "mensagem": f"Login bem-sucedido. Bem-vindo, {usuario['nome']}!",
+                "token": access_token,
+                "usuario": {
+                    "id": usuario['id_usuario'],
+                    "nome": usuario['nome'],
+                    "email": usuario['email'],
+                    "nivel_acesso": usuario['nivel_acesso_nome']
+                }
+            }), 200
+        else:
+            return jsonify({"erro": "Credenciais inválidas"}), 401
+            
+    except Exception as e:
+        print(f"❌ [ERROR] Erro no login: {e}")
         return jsonify({
-        "mensagem": f"Login bem-sucedido. Bem-vindo, {usuario}!",
-        "token": access_token
-    }), 200
-    else:
-        return jsonify({"erro": "Credenciais inválidas"}), 401
-
+            "erro": "Erro ao realizar login",
+            "mensagem": str(e)
+        }), 500
 
 @app.route("/logout", methods=["POST"])
 def logout():
@@ -1508,9 +1533,6 @@ def logout():
 @jwt_required()
 def listar_usuarios():
     """Lista todos os usuários (protegida por JWT)"""
-    if not MYSQL_AVAILABLE:
-        return jsonify({"erro": "DAO MySQL não disponível"}), 503
-    
     try:
         dao_usuario = UsuarioDAO()
         usuarios = dao_usuario.listar_usuarios()
@@ -1523,9 +1545,6 @@ def listar_usuarios():
 @jwt_required()
 def buscar_usuario(id):
     """Busca um usuário específico por ID (protegida por JWT)"""
-    if not MYSQL_AVAILABLE:
-        return jsonify({"erro": "DAO MySQL não disponível"}), 503
-    
     try:
         dao_usuario = UsuarioDAO()
         usuario = dao_usuario.buscar_usuario(id)
@@ -1542,9 +1561,6 @@ def buscar_usuario(id):
 @jwt_required()
 def buscar_usuario_por_email(email):
     """Busca um usuário específico por email (protegida por JWT)"""
-    if not MYSQL_AVAILABLE:
-        return jsonify({"erro": "DAO MySQL não disponível"}), 503
-    
     try:
         dao_usuario = UsuarioDAO()
         usuario = dao_usuario.buscar_usuario_por_email(email)
@@ -1561,9 +1577,6 @@ def buscar_usuario_por_email(email):
 @jwt_required()
 def listar_usuarios_por_nivel(id_nivel):
     """Lista usuários de um nível de acesso específico (protegida por JWT)"""
-    if not MYSQL_AVAILABLE:
-        return jsonify({"erro": "DAO MySQL não disponível"}), 503
-    
     try:
         dao_usuario = UsuarioDAO()
         usuarios = dao_usuario.listar_usuarios_por_nivel(id_nivel)
@@ -1576,9 +1589,6 @@ def listar_usuarios_por_nivel(id_nivel):
 @jwt_required()
 def listar_usuarios_ativos():
     """Lista apenas usuários ativos (protegida por JWT)"""
-    if not MYSQL_AVAILABLE:
-        return jsonify({"erro": "DAO MySQL não disponível"}), 503
-    
     try:
         dao_usuario = UsuarioDAO()
         usuarios = dao_usuario.listar_usuarios_ativos()
@@ -1595,9 +1605,6 @@ def listar_usuarios_ativos():
 @jwt_required()
 def listar_niveis_acesso():
     """Lista todos os níveis de acesso (protegida por JWT)"""
-    if not MYSQL_AVAILABLE:
-        return jsonify({"erro": "DAO MySQL não disponível"}), 503
-    
     try:
         dao_nivel = NivelAcessoDAO()
         niveis = dao_nivel.listar_niveis_acesso()
