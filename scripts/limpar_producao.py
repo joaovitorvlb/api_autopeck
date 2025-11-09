@@ -100,8 +100,115 @@ def resetar_banco_mysql():
         print("  🔗 Conectado ao MySQL")
         
         with get_cursor() as cur:
-            # 1. Limpar todas as tabelas (ordem importante por causa das FKs)
-            print("  🗑️  Limpando tabelas...")
+            # 1. Criar tabelas se não existirem
+            print("  🔧 Verificando/criando estrutura do banco...")
+            
+            # Criar tabela nivel_acesso
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS nivel_acesso (
+                    id_nivel_acesso INT AUTO_INCREMENT PRIMARY KEY,
+                    nome VARCHAR(50) NOT NULL UNIQUE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """)
+            
+            # Criar tabela usuario
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS usuario (
+                    id_usuario INT AUTO_INCREMENT PRIMARY KEY,
+                    nome VARCHAR(100) NOT NULL,
+                    email VARCHAR(100) NOT NULL UNIQUE,
+                    senha_hash VARCHAR(255) NOT NULL,
+                    telefone VARCHAR(20),
+                    ativo BOOLEAN DEFAULT 1,
+                    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    id_nivel_acesso INT NOT NULL,
+                    CONSTRAINT fk_usuario_nivel
+                        FOREIGN KEY (id_nivel_acesso) 
+                        REFERENCES nivel_acesso(id_nivel_acesso)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """)
+            
+            # Criar tabela Cliente
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS Cliente (
+                    id_cliente INT NOT NULL AUTO_INCREMENT,
+                    nome VARCHAR(255) NOT NULL,
+                    email VARCHAR(255),
+                    telefone VARCHAR(20),
+                    endereco TEXT,
+                    PRIMARY KEY (id_cliente),
+                    UNIQUE KEY unique_email (email),
+                    KEY idx_cliente_email (email)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """)
+            
+            # Criar tabela Funcionario
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS Funcionario (
+                    id_funcionario INT NOT NULL AUTO_INCREMENT,
+                    nome VARCHAR(255) NOT NULL,
+                    cargo VARCHAR(100),
+                    salario DECIMAL(10,2),
+                    data_contratacao DATE,
+                    PRIMARY KEY (id_funcionario)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """)
+            
+            # Criar tabela Produto
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS Produto (
+                    id_produto INT NOT NULL AUTO_INCREMENT,
+                    nome VARCHAR(255) NOT NULL,
+                    descricao TEXT,
+                    preco DECIMAL(10,2) NOT NULL,
+                    estoque INT DEFAULT 0,
+                    nome_imagem VARCHAR(255),
+                    url VARCHAR(255),
+                    PRIMARY KEY (id_produto)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """)
+            
+            # Criar tabela Venda
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS Venda (
+                    id_venda INT NOT NULL AUTO_INCREMENT,
+                    id_cliente INT,
+                    id_funcionario INT,
+                    data_venda TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    total DECIMAL(10,2) NOT NULL,
+                    PRIMARY KEY (id_venda),
+                    KEY idx_venda_cliente (id_cliente),
+                    KEY idx_venda_funcionario (id_funcionario),
+                    KEY idx_venda_data (data_venda),
+                    CONSTRAINT fk_venda_cliente 
+                        FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente) ON DELETE SET NULL,
+                    CONSTRAINT fk_venda_funcionario 
+                        FOREIGN KEY (id_funcionario) REFERENCES Funcionario(id_funcionario) ON DELETE SET NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """)
+            
+            # Criar tabela Item_Venda
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS Item_Venda (
+                    id_item INT NOT NULL AUTO_INCREMENT,
+                    id_venda INT NOT NULL,
+                    id_produto INT NOT NULL,
+                    quantidade INT NOT NULL DEFAULT 1,
+                    preco_unitario DECIMAL(10,2) NOT NULL,
+                    PRIMARY KEY (id_item),
+                    KEY idx_item_venda (id_venda),
+                    KEY idx_item_produto (id_produto),
+                    CONSTRAINT fk_item_venda 
+                        FOREIGN KEY (id_venda) REFERENCES Venda(id_venda) ON DELETE CASCADE,
+                    CONSTRAINT fk_item_produto 
+                        FOREIGN KEY (id_produto) REFERENCES Produto(id_produto) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """)
+            
+            print("  ✅ Estrutura do banco verificada/criada")
+            
+            # 2. Limpar todas as tabelas (ordem importante por causa das FKs)
+            print("  🗑️  Limpando dados das tabelas...")
             cur.execute("SET FOREIGN_KEY_CHECKS = 0")
             cur.execute("TRUNCATE TABLE Item_Venda")
             cur.execute("TRUNCATE TABLE Venda")
@@ -113,7 +220,7 @@ def resetar_banco_mysql():
             cur.execute("SET FOREIGN_KEY_CHECKS = 1")
             print("  ✅ Tabelas limpas")
             
-            # 2. Inserir apenas dados padrão de nivel_acesso
+            # 3. Inserir apenas dados padrão de nivel_acesso
             print("  📝 Inserindo dados padrão...")
             
             # Níveis de acesso (único dado padrão)
