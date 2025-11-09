@@ -69,3 +69,19 @@ class UsuarioDAO:
                 ORDER BY u.nome;
             """)
             return cur.fetchall()
+
+    def autenticar_usuario(self, email, senha_hash):
+        """
+        Autentica um usuário por email e hash da senha
+        Retorna dados do usuário se autenticação for bem-sucedida, None caso contrário
+        """
+        with get_cursor() as cur:
+            cur.execute("""
+                SELECT u.id_usuario, u.nome, u.email, u.telefone, u.ativo, 
+                       u.data_criacao, u.id_nivel_acesso, n.nome as nivel_acesso_nome
+                FROM usuario u
+                INNER JOIN nivel_acesso n ON u.id_nivel_acesso = n.id_nivel_acesso
+                WHERE u.email = %s AND u.senha_hash = %s AND u.ativo = 1;
+            """, (email, senha_hash))
+            row = cur.fetchone()
+            return row
