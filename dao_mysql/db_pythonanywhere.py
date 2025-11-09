@@ -34,8 +34,7 @@ def init_db(db_config: dict = None, minconn: int = 1, maxconn: int = 3):
             'collation': 'utf8mb4_unicode_ci',
             'autocommit': False,
             'ssl_disabled': True,  # PythonAnywhere não precisa de SSL
-            'connection_timeout': 60,
-            'pool_reset_session': True
+            'connection_timeout': 60
         }
 
     # Pool menor para PythonAnywhere (limite de conexões no free tier)
